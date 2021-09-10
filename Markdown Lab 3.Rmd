@@ -1,0 +1,121 @@
+---
+title: "Lab 3"
+author: "Songru Wang"
+date: "9/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+1. Read in the data
+```{r}
+#if only downlaod it if we haven't
+download.file("https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz", "met_all.gz", method="libcurl", timeout = 60)
+```
+
+2. Check the dimensions
+```{r}
+library(data.table)
+library(tidyverse)
+install.packages('R.utils')
+
+met <- data.table::fread("met_all.gz")
+dim(met)
+head(met)
+tail(met)
+```
+
+3. Take a look at the variables
+```{r}
+str(met)
+```
+
+4. Take a closer look at the key variables
+```{r}
+table(met$year)
+table(met$day)
+summary(met$temp)
+summary(met$elev)
+summary(met$wind.sp)
+
+met[met$elev==9999.0] <- NA
+summary(met$elev)
+#At what elevation is the highest weather station?
+
+met <- met[temp>-40]
+met2 <- met[order(temp)]
+met<-met[temp>-15][order(temp)]
+summary(met[,.(lat,lon,wind.sp,temp,elev)])
+head(met2)
+
+met <- met[temp>-40]
+met2 <- met[order(temp)]
+head(met2)
+```
+
+5. Check the data against an external data source.
+```{r}
+met <- met[temp>-15]
+met2 <- met[order(temp)]
+head(met2)
+```
+
+6. Calculate summary statistics
+```{r}
+elev <- met[elev==max(elev)]
+summary(elev)
+
+cor(elev$temp, elev$wind.sp, use="complete")
+cor(elev$temp, elev$hour, use="complete")
+cor(elev$wind.sp, elev$day, use="complete")
+cor(elev$wind.sp, elev$hour, use="complete")
+cor(elev$temp, elev$day, use="complete")
+```
+
+7. Exploratory graphs
+```{r}
+hist(met$elev, breaks=100)
+hist(met$temp)
+hist(met$wind.sp)
+
+install.packages('leaflet')
+library(leaflet)
+leaflet(elev) %>%
+  addProviderTiles('OpenStreetMap') %>% 
+  addCircles(lat=~lat,lng=~lon, opacity=1, fillOpacity=1, radius=100)
+
+library(lubridate)
+elev$date <- with(elev, ymd_h(paste(year, month, day, hour, sep= ' ')))
+summary(elev$date)
+
+elev <- elev[order(date)]
+head(elev)
+
+plot(elev$date, elev$temp, type='l')
+
+plot(elev$date, elev$wind.sp, type='l')
+```
+
